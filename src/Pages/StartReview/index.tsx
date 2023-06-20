@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const StartReview = ({route}) => {
   const navigation = useNavigation();
-  console.log(route.params.title);
+
   useEffect(() => {
     let thisDate = new Date();
     let day = ("0" + thisDate.getDate()).slice(-2);
@@ -16,6 +16,30 @@ const StartReview = ({route}) => {
   
    
   }, []);
+  const startCheckOut = async ()=>{
+    let thisDate = new Date();
+    thisDate.setHours(thisDate.getHours() - 3);
+
+   /*  const  result = await api.put('/iniciar_limpeza', {
+      id_accommodation: route.params.id,
+      id_booking:  route.params.booking,
+      departure_date: route.params.departureDate,
+      type: route.params.prioridade?'Prioridade':'Normal',
+      initiated_at: thisDate
+    }); */
+    
+      let types =  route.params.prioridade?'Prioridade':'Normal'
+    
+    console.log({
+      id_accommodation: route.params.id,
+      id_booking:  route.params.bookingId,
+      departure_date: route.params.departureDate,
+      type: types,
+      initiated_at: thisDate
+    })
+
+    //navigation.navigate('Wardrobe', { title: route.params.title })}
+  }
   return (
     <Container>
       <ImageView>
@@ -23,7 +47,7 @@ const StartReview = ({route}) => {
       </ImageView>
         <Title>{route.params.title}</Title>
         <ActionView>
-          <Entrar onPress={() => navigation.navigate('Wardrobe', { title: route.params.title })}>
+          <Entrar onPress={() => startCheckOut()}>
             <ButtonLabel>Começar</ButtonLabel>
           </Entrar>
           <Voltar onPress={() => navigation.goBack()}>Voltar</Voltar>

@@ -75,7 +75,7 @@ const Others = ({route}) => {
   ]);
 
   const [selects2, setSelects2] = useState<SelectType[]>([
-    { optSelect: enxovalOptions[0].value, quantity: 0 }
+    { optSelect: enxovalOptions[0].value, quantity: 0,tag:'' }
   ]);
 
   const [selects3, setSelects3] = useState<SelectType[]>([
@@ -146,9 +146,54 @@ const Others = ({route}) => {
       manut,
       
     })
-    navigation.navigate('QRCode', {title: route.params.title})
+    objectPut()
+    //navigation.navigate('QRCode', {title: route.params.title})
   }
-  console.log(selectNextTab)
+  
+  const objectPut = async ()=>{
+    function joinOptSelects(items) {
+      var optSelects = items.map(function(item) {
+        return item.optSelect;
+      });
+      var joinedString = optSelects.join(';');
+      return joinedString+';';
+    }
+  
+    function joinOptSelectsQuantity(items) {
+      var optSelects = items.map(function(item) {
+        return item.quantity;
+      });
+      var joinedString = optSelects.join(';');
+      return joinedString+';';
+    }
+    function joinOptSelectsTag(items) {
+      var optSelects = items.map(function(item) {
+        return item.tag;
+      });
+      var joinedString = optSelects.join(';');
+      return joinedString+';';
+    }
+  
+    var resultSelect = joinOptSelects(selects2);
+    var resultSelect2 = joinOptSelectsQuantity(selects2);
+    var resultSelectTag = joinOptSelectsTag(selects2);
+  
+  
+    var resultSelect3 = joinOptSelects(selects3);
+    var resultSelect4 = joinOptSelectsQuantity(selects3);
+    const quebrou ={
+      resultSelect,
+      resultSelect2,
+      resultSelectTag,
+      resultSelect3,
+      resultSelect4
+    } 
+
+   
+    
+
+  }
+
 
   return (
     <Container>
@@ -191,7 +236,7 @@ const Others = ({route}) => {
                           return <ArrowImage source={require("../../Assets/down.png")} />;
                         }}
                         buttonStyle={{ width: '50%' }} 
-                        defaultButtonText={'Selecionsse'} 
+                        defaultButtonText={'Selecione'} 
                         data={statusOptions} 
                         onSelect={(e) => updateSelect2(index, 'quantity', e)}
                       />
@@ -215,7 +260,7 @@ const Others = ({route}) => {
             renderDropdownIcon={isOpen1 => {
               return <ArrowImage source={require("../../Assets/down.png")} />;
             }}
-            buttonStyle={{ width: '10%' }} 
+            buttonStyle={{ width: '30%' }} 
             defaultButtonText={'Selecione'} 
             data={yesOrNoOptions} 
             onSelect={(e) => updateManut(e)}/>

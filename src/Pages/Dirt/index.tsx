@@ -121,11 +121,7 @@ const Dirt = ({route}) => {
   }
 
   const updateProblems = (e) => {
-    if (e === 'Sim') {
-      setProblems(true);
-    } else if (e === 'Não') {
-      setProblems(false);
-    }
+   setProblems(e)
   }
 
   const updateMissSome = (e) => {

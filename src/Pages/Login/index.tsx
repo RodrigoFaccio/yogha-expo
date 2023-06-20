@@ -22,22 +22,22 @@ const Login = () => {
   const [document, setDocument] = useState("");
 
   const handleLogin = async () => {
-    // if (email === "" || document === "") {
-    //   setError(true);
-    // } else {
-    //   try {
-    //     const response = await api.post("/login", {
-    //       email,
-    //       document,
-    //     });
-    //     console.log(response);
-    //     if (response.data.result[0].name !== "") {
-    navigation.navigate("Home");
-    //     }
-    //   } catch (err) {
-    //     setError(true);
-    //   }
-    // }
+     if (email === "" || document === "") {
+       setError(true);
+     } else {
+       try {
+         const response = await api.post("/login", {
+           email,
+           document,
+         });
+         console.log(response);
+         if (response.data.result[0].name !== "") {
+          navigation.navigate('Home');
+         }
+       } catch (err) {
+         setError(true);
+       }
+     }
   };
 
   return (

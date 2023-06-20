@@ -4,7 +4,11 @@ import { Ask, AskView, Container, ImageView, Logo, Title, ActionView, Voltar,
   InputView, InputQnt, Entrar, ButtonLabel, AddView, AddInsideView, HeaderContainer, 
   BodyContainer, FooterContainer, ImageArrow, ArrowImage, Cam, CamImage } from "./styles";
 import { useNavigation } from "@react-navigation/native";
+import { Alert, StyleSheet,View } from "react-native";
+import { Camera } from 'expo-camera';
+import * as MediaLibrary from 'expo-media-library'; 
 import SelectDropdown from 'react-native-select-dropdown';
+import api from "../../Services/api";
 
 type SelectType = {
   optSelect: string;
@@ -26,6 +30,13 @@ const Dirt = ({route}) => {
 
   const [isOpen1, setIsOpen1] = useState(false);
   const [selectNextTab, setSelecteNextTab] = useState();
+  const [capture, setCapture] = useState(false);
+  const [arrImage, setArrImage] = useState(false);
+  const [cameraRef, setCameraRef] = useState(null);
+
+  const addToText = (newText) => {
+    setArrImage((prevText) => prevText ? `${prevText};${newText}` : newText);
+  };
 
   const smookingOptions: string[] = [
     'Cheiro',
@@ -152,52 +163,130 @@ const Dirt = ({route}) => {
     })
    objectPut()
 
-   navigation.navigate('Others', {title: route.params.title})
+   navigation.navigate('Others', {title: route.params.title,id: route.params.id })
   }
-  function joinOptSelects(items) {
-    var optSelects = items.map(function(item) {
-      return item.optSelect;
-    });
-    var joinedString = optSelects.join(';');
-    return joinedString+';';
-  }
+ 
 
-  function joinOptSelectsQuantity(items) {
-    var optSelects = items.map(function(item) {
-      return item.quantity;
-    });
-    var joinedString = optSelects.join(';');
-    return joinedString+';';
-  }
-  var result = joinOptSelects(selects2);
-  var result2 = joinOptSelectsQuantity(selects2);
-
-  var resultSelect = joinOptSelects(selects3);
-  var resultSelect2 = joinOptSelectsQuantity(selects3);
-
-  const objectPut = ()=>{
-    const broke = {
+  const objectPut = async()=>{
+    function joinOptSelects(items) {
+      var optSelects = items.map(function(item) {
+        return item.optSelect;
+      });
+      var joinedString = optSelects.join(';');
+      return joinedString+';';
+    }
+  
+    function joinOptSelectsQuantity(items) {
+      var optSelects = items.map(function(item) {
+        return item.quantity;
+      });
+      var joinedString = optSelects.join(';');
+      return joinedString+';';
+    }
+    var result = joinOptSelects(selects2);
+    var result2 = joinOptSelectsQuantity(selects2);
+  
+    var resultSelect = joinOptSelects(selects3);
+    var resultSelect2 = joinOptSelectsQuantity(selects3);
+    const cleaning = {
       result,
       result2
     }
-    const cleaning = {
+    const broke = {
       resultSelect,
       resultSelect2
     }
-    const quebrou ={
-      broke,
-      cleaning,
-      problems,
-      missSome,
-      cleanSome,
-      stateDirt
-    }
+    let thisDate = new Date();
+    thisDate.setHours(thisDate.getHours() - 3);
 
-    console.log(quebrou)
+
+    const response = await api.put('/incluir_sujeira', {
+      checkout_id: route.params.CheckOutId,
+      state:stateDirt,
+      smoked: problems!==false?true:false,
+      smoked_type: problems,
+      broked_items: broke.resultSelect,
+      cleaning_items:  cleaning.result,
+      cleaning_items_number:  cleaning.result2,
+      dirt_photo: arrImage
+    });
+   
+   
+    navigation.navigate('Others', { title: route.params.title,CheckOutId: route.params.CheckOutId })
   }
+  const styles = StyleSheet.create({
+    cameraContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    camera: {
+      width: '100%',
+      height: '85%',
+    },
+  });
+  const handleCapturePhoto = async () => {
+    if (cameraRef) {
+      try {
+        const {uri} = await cameraRef.takePictureAsync();
 
+        if (uri) {
+          if (Platform.OS === 'ios') {
+           await MediaLibrary.requestPermissionsAsync();
 
+          }
+         await MediaLibrary.saveToLibraryAsync(uri);
+          uploadPhoto(uri)
+        
+          Alert.alert('Foto salva com sucesso!');
+          setCapture(false)
+        }
+      } catch (error) {
+        console.log('Erro ao capturar foto:', error);
+      }
+    }
+  };
  
+  const uploadPhoto = async (photoUri) => {
+    const apiUrl = 'https://dev.yogha.com.br/api/mobile-operational/set-image'; // URL da API de upload
+  
+      try {
+        const formData = new FormData();
+        formData.append('id', '123'); // substitua pelo valor correto do ID
+        formData.append('file', {
+          uri:photoUri,
+          type: 'image/jpeg', // ajuste o tipo de acordo com o formato da imagem
+          name: 'photo.jpg', // ajuste o nome do arquivo conforme necessário
+        });
+      console.log(JSON.stringify(formData));
+
+  
+      const response = await api.post(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      console.log('Foto enviada com sucesso:', response.data);
+      addToText(response.data.link)
+      } catch (error) {
+        console.log(error)
+      }
+   
+  };
+
+  if(capture){
+    return(
+     <View style={styles.cameraContainer}>
+      <Camera style={styles.camera} type={Camera.Constants.Type.back} ref={ref => setCameraRef(ref)} />
+      <Cam onPress={handleCapturePhoto}>
+
+    <CamImage source={require("../../Assets/cam.png")}  />
+    </Cam>
+     </View>
+
+    )
+  }
 
   return (
     <Container>
@@ -318,8 +407,8 @@ const Dirt = ({route}) => {
       </BodyContainer>
       <FooterContainer>
           <Voltar onPress={() => navigation.goBack()}>Voltar</Voltar>
-          <Cam>
-            <CamImage source={require("../../Assets/cam.png")} />
+          <Cam onPress={()=>setCapture(true)}>
+            <CamImage  source={require("../../Assets/cam.png")}  />
           </Cam>
           <Voltar onPress={() =>addAllObjects()}>Continuar</Voltar>
       </FooterContainer>

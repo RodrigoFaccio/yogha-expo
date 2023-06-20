@@ -156,5 +156,15 @@ export const Cam = styled.TouchableOpacity`
   align-items: center;
   border-radius: 100px;
   cursor: pointer;
-  margin-left: 30px;
+`;
+export const Cam2 = styled.TouchableOpacity`
+  background-color: #FF7A2A;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 100px;
+  cursor: pointer;
+  margin-left:50px
 `;

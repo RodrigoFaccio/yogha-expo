@@ -5,7 +5,10 @@ import { Ask, AskView, Container, ImageView, Logo, Title, ActionView, Voltar,
   BodyContainer, FooterContainer, ImageArrow, ArrowImage, Cam, CamImage } from "./styles";
 import { useNavigation } from "@react-navigation/native";
 import SelectDropdown from 'react-native-select-dropdown';
-
+import api from "../../Services/api";
+import { Alert, StyleSheet,View } from "react-native";
+import { Camera } from 'expo-camera';
+import * as MediaLibrary from 'expo-media-library'; // Importação atualizada
 type SelectType = {
   optSelect: string;
   quantity: number;
@@ -18,14 +21,20 @@ type OptionType = {
 
 const Wardrobe = ({route}) => {
   const navigation = useNavigation();
+  const [capture, setCapture] = useState(false);
+  const [arrImage, setArrImage] = useState(false);
+  const [cameraRef, setCameraRef] = useState(null);
+
+  const addToText = (newText) => {
+    setArrImage((prevText) => prevText ? `${prevText};${newText}` : newText);
+  };
 
   const [missSome, setMissSome] = useState(false);
   const [problems, setProblems] = useState(false);
 
   const [isOpen1, setIsOpen1] = useState(false);
   const [selectNextTab, setSelecteNextTab] = useState();
-
-
+  
   const yesOrNoOptions: string[] = [
     'Sim',
     'Não',
@@ -40,6 +49,11 @@ const Wardrobe = ({route}) => {
     'Pano de prato',
     'Manta',
     'Coberta',
+  ]
+  const enxovalOptionsType: OptionType[] = [
+    'Manchou',
+    'Rasgou',
+    
   ]
 
   const [selects, setSelects] = useState<SelectType[]>([
@@ -135,25 +149,120 @@ const Wardrobe = ({route}) => {
     var joinedString = optSelects.join(';');
     return joinedString+';';
   }
-  var resultSelect = joinOptSelects(selects);
-  var resultSelect2 = joinOptSelectsQuantity(selects);
+  var used = joinOptSelects(selects);
+  var usedCoutn = joinOptSelectsQuantity(selects);
 
-  var resultSelect3 = joinOptSelects(selects2);
-  var resultSelect4 = joinOptSelectsQuantity(selects2);
+  var missing = joinOptSelects(selects2);
+  var missingCount = joinOptSelectsQuantity(selects2);
 
-  var resultSelect5 = joinOptSelects(selects3);
+  var problem = joinOptSelects(selects3);
+  var problemCount = joinOptSelectsQuantity(selects3);
 
-  const objectPut = ()=>{
-    
-    const quebrou ={
-      resultSelect,
-      resultSelect2,
-      resultSelect3,
-      resultSelect4,
-      resultSelect5,
+
+  
+  const startChekOut =async ()=>{
+    let thisDate = new Date();
+    thisDate.setHours(thisDate.getHours() - 3);
+
+
+    const result = await api.put('/incluir_enxoval', {
+      checkout_id: route.params.CheckOutId,
+      wardrobe_used: used,
+      wardrobe_used_count: usedCoutn,
+      wardrobe_missing: missing,
+      wardrobe_missing_count: missingCount,
+      wardrobe_problem: problem,
+      wardrobe_problem_type: problemCount,
+      coast: route.params.prioridade?30:25,
+      wardrobe_photo: arrImage
+    });
+    console.log({
+      checkout_id: route.params.CheckOutId,
+      wardrobe_used: used,
+      wardrobe_used_count: usedCoutn,
+      wardrobe_missing: missing,
+      wardrobe_missing_count: missingCount,
+      wardrobe_problem: problem,
+      wardrobe_problem_type: problemCount,
+      coast: route.params.prioridade?30:25,
+      wardrobe_photo: arrImage
+    })
+   
+    navigation.navigate('Dirt', { title: route.params.title,CheckOutId: route.params.CheckOutId })
+
+  }
+  const styles = StyleSheet.create({
+    cameraContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    camera: {
+      width: '100%',
+      height: '85%',
+    },
+  });
+  const handleCapturePhoto = async () => {
+    if (cameraRef) {
+      try {
+        const {uri} = await cameraRef.takePictureAsync();
+
+        if (uri) {
+          if (Platform.OS === 'ios') {
+           await MediaLibrary.requestPermissionsAsync();
+
+          }
+         await MediaLibrary.saveToLibraryAsync(uri);
+          uploadPhoto(uri)
+        
+          Alert.alert('Foto salva com sucesso!');
+          setCapture(false)
+        }
+      } catch (error) {
+        console.log('Erro ao capturar foto:', error);
+      }
     }
-   console.log(quebrou)
+  };
+ 
+  const uploadPhoto = async (photoUri) => {
+    const apiUrl = 'https://dev.yogha.com.br/api/mobile-operational/set-image'; // URL da API de upload
+  
+      try {
+        const formData = new FormData();
+        formData.append('id',String(route.params.CheckOutId)); // substitua pelo valor correto do ID
+        formData.append('file', {
+          uri:photoUri,
+          type: 'image/jpeg', // ajuste o tipo de acordo com o formato da imagem
+          name: 'photo.jpg', // ajuste o nome do arquivo conforme necessário
+        });
+      console.log(JSON.stringify(formData));
 
+  
+      const response = await api.post(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      console.log('Foto enviada com sucesso:', response.data);
+      addToText(response.data.link)
+      } catch (error) {
+        console.log(error)
+      }
+   
+  };
+
+  if(capture){
+    return(
+     <View style={styles.cameraContainer}>
+      <Camera style={styles.camera} type={Camera.Constants.Type.back} ref={ref => setCameraRef(ref)} />
+      <Cam onPress={handleCapturePhoto}>
+
+    <CamImage source={require("../../Assets/cam.png")}  />
+    </Cam>
+     </View>
+
+    )
   }
 
 
@@ -245,9 +354,21 @@ const Wardrobe = ({route}) => {
                       renderDropdownIcon={isOpen1 => {
                         return <ArrowImage source={require("../../Assets/down.png")} />;
                       }}
+            buttonStyle={{ width: '50%' }} 
+
                       defaultButtonText={'Selecione'} 
                       data={enxovalOptions} 
                       onSelect={(e) => updateSelect3(index, 'optSelect', e)}
+                      />
+                      <SelectDropdown 
+                      renderDropdownIcon={isOpen1 => {
+                        return <ArrowImage source={require("../../Assets/down.png")} />;
+                      }}
+            buttonStyle={{ width: '50%' }} 
+
+                      defaultButtonText={'Selecione'} 
+                      data={enxovalOptionsType} 
+                      onSelect={(e) => updateSelect3(index, 'quantity', e)}
                       />
                   </AddInsideView>
                 ))}
@@ -261,10 +382,10 @@ const Wardrobe = ({route}) => {
       </BodyContainer>
       <FooterContainer>
           <Voltar onPress={() => navigation.goBack()}>Voltar</Voltar>
-          <Cam>
+          <Cam  onPress={()=>setCapture(true)}>
             <CamImage source={require("../../Assets/cam.png")} />
           </Cam>
-          <Voltar onPress={() =>addAllObjects()}>Continuar</Voltar>
+          <Voltar onPress={() =>startChekOut()}>Continuar</Voltar>
       </FooterContainer>
     </Container>
   );

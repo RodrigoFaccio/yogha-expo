@@ -39,13 +39,12 @@ const Checkout = () => {
 
         const arrComPrioridade = listarSaidaHoje.data.result.map((item) => {
           return {
-            id:item.id,
-            departure_date:item.departure_date,
             name: item.name,
+            id:item.id,
+            booking:item.booking_list_id,
+            departureDate:item.departure_date,
             accommodation: item.accommodation,
             web: item.web,
-            booking:item.booking_list_id,
-
             prioridade: false,
             renovacao: false,
           };
@@ -60,14 +59,12 @@ const Checkout = () => {
         const listarHojeRenovacao = listarEntradaHoje.data.result.map(
           (item) => {
             return {
-            id:item.id,
-            departure_date:item.departure_date,
-
               name: item.name,
+              id:item.id,
+              booking:item.booking_list_id,
+              departureDate:item.departure_date,
               accommodation: item.accommodation,
               web: item.web,
-              booking:item.booking_list_id,
-
               renovacao:
                 item.web === "Renovacao-MidStay" || item.web === "Renovacao"
                   ? true
@@ -83,7 +80,6 @@ const Checkout = () => {
           if (objetoEncontrado) {
             return {
               ...obj1,
-
               prioridade: true,
               renovacao: objetoEncontrado.renovacao,
             };
@@ -92,20 +88,17 @@ const Checkout = () => {
         });
 
         const novaLista = novaListaPrioridade.map((item) => {
-
           return {
-            id:item.id,
             name: item.name,
-            departure_date:item.departure_date,
             accommodation: item.accommodation,
             web: item.web,
+            id:item.id,
             booking:item.booking,
-
+            departureDate:item.departureDate,
             renovacao: item.renovacao,
             prioridade: item.prioridade,
           };
         });
-
 
         const groupedData = novaLista.reduce((result, obj) => {
           const foundGroup = result.find((group) => group.name === obj.name);
@@ -116,7 +109,7 @@ const Checkout = () => {
           }
           return result;
         }, []);
-       
+        const trueNewValues = groupedData.map((item) => item.items.sort((a,b) => b.prioridade - a.prioridade));
         setList(groupedData);
       } catch (error) {
         console.log(error);
@@ -135,8 +128,6 @@ const Checkout = () => {
     const dataFormatada = formatarData(dataAtual);
     setDate(dataFormatada);
   }, [isFocused]);
-
- 
 
   return (
     <Container>
@@ -160,11 +151,11 @@ const Checkout = () => {
                   return (
                     <View key={index}>
                       {item2.prioridade ? (
-                        <ListViewSelect onPress={() => navigation.navigate('StartReview', { title: item2.accommodation,id:item2.id,bookingId:item2.booking,departureDate:item2.departure_date ,prioridade:item2.prioridade })}>
+                        <ListViewSelect onPress={() => navigation.navigate('StartReview', { title: item2.accommodation,id:item2.id,booking:item2.booking,departureDate:item2.departureDate,prioridade:item.prioridade })} >
                           <LabelTrue>{item2.accommodation}</LabelTrue>
                         </ListViewSelect>
                       ) : (
-                        <ListViewSelect onPress={() => navigation.navigate('StartReview', { title: item2.accommodation,id:item2.id,bookingId:item2.booking,departureDate:item2.departure_date,prioridade:item2.prioridade })}  >
+                        <ListViewSelect onPress={() => navigation.navigate('StartReview',{ title: item2.accommodation,id:item2.id,booking:item2.booking,departureDate:item2.departureDate,prioridade:item.prioridade })}  >
                           <LabelFalse>{item2.accommodation}</LabelFalse>
                         </ListViewSelect>
                       )}

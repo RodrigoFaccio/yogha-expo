@@ -1,11 +1,16 @@
 //@ts-nocheck
-import React, {useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
+
 import { Ask, AskView, Container, ImageView, Logo, Title, ActionView, Voltar, 
   InputView, InputQnt, Entrar, ButtonLabel, AddView, AddInsideView, HeaderContainer, 
-  BodyContainer, FooterContainer, ImageArrow, ArrowImage, Cam, CamImage, AddInputView, AddContainerView } from "./styles";
+  BodyContainer, FooterContainer, ImageArrow, ArrowImage, Cam, CamImage, AddInputView, AddContainerView, Cam2 } from "./styles";
 import { useNavigation } from "@react-navigation/native";
 import SelectDropdown from 'react-native-select-dropdown';
+import { Camera } from 'expo-camera';
+import * as MediaLibrary from 'expo-media-library'; // Importação atualizada
 
+import { Button, View ,StyleSheet, Dimensions, Alert} from "react-native";
+import api from "../../Services/api";
 type SelectType = {
   optSelect: string;
   quantity: number;
@@ -19,13 +24,24 @@ type OptionType = {
 
 const Others = ({route}) => {
   const navigation = useNavigation();
-
+  const [image, setImage] = useState(null);
   const [missSome, setMissSome] = useState(false);
   const [problems, setProblems] = useState(false);
   const [manut, setManut] = useState(false);
   const [selectNextTab, setSelecteNextTab] = useState();
+  const [capture, setCapture] = useState(false);
+  const [arrImage, setArrImage] = useState(false);
+
+  const addToText = (newText) => {
+    setArrImage((prevText) => prevText ? `${prevText};${newText}` : newText);
+  };
+  const [permission, requestPermission] = Camera.useCameraPermissions();
+  const [increment, setIncrement] = useState(0);
+
 
   const [isOpen1, setIsOpen1] = useState(false);
+  const [cameraRef, setCameraRef] = useState(null);
+
 
   const yesOrNoOptions: string[] = [
     'Sim',
@@ -137,20 +153,10 @@ const Others = ({route}) => {
       setManut(false);
     }
   }
-  const addAllObjects = ()=>{
-    setSelecteNextTab({
-      selects2,
-      selects3,
-      problems,
-      missSome,
-      manut,
-      
-    })
-    objectPut()
-    //navigation.navigate('QRCode', {title: route.params.title})
-  }
-  
-  const objectPut = async ()=>{
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+
+  const startCheckOut =async ()=>{
     function joinOptSelects(items) {
       var optSelects = items.map(function(item) {
         return item.optSelect;
@@ -173,29 +179,109 @@ const Others = ({route}) => {
       var joinedString = optSelects.join(';');
       return joinedString+';';
     }
-  
-    var resultSelect = joinOptSelects(selects2);
-    var resultSelect2 = joinOptSelectsQuantity(selects2);
-    var resultSelectTag = joinOptSelectsTag(selects2);
-  
-  
-    var resultSelect3 = joinOptSelects(selects3);
-    var resultSelect4 = joinOptSelectsQuantity(selects3);
-    const quebrou ={
-      resultSelect,
-      resultSelect2,
-      resultSelectTag,
-      resultSelect3,
-      resultSelect4
-    } 
+    const eletronic = joinOptSelects(selects2)
+    const eletronicCount = joinOptSelects(selects2)
+    const eletronicTag = joinOptSelectsTag(selects2)
 
-   
+    const manuts = joinOptSelects(selects3)
+    const manutCount = joinOptSelectsQuantity(selects3)
+
+
+    let thisDate = new Date();
+    thisDate.setHours(thisDate.getHours() - 3);
+
+
+    const result = await api.put('/incluir_outros', {
+      checkout_id: route.params.CheckOutId,
+      eletronic: eletronic,
+      eletronic_type: eletronicCount,
+      eletronic_number: eletronicTag,
+      maintenance: manuts,
+      maintenance_reason: manutCount,
+      others_photo: arrImage
+    })
     
+    navigation.navigate('QRCode', { title: route.params.title,CheckOutId:  route.params.CheckOutId })
 
   }
 
+ 
+  
+  const styles = StyleSheet.create({
+    cameraContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    camera: {
+      width: '100%',
+      height: '85%',
+    },
+  });
+  const handleCapturePhoto = async () => {
+    if (cameraRef) {
+      try {
+        const {uri} = await cameraRef.takePictureAsync();
 
+        if (uri) {
+          if (Platform.OS === 'ios') {
+           await MediaLibrary.requestPermissionsAsync();
+
+          }
+         await MediaLibrary.saveToLibraryAsync(uri);
+          uploadPhoto(uri)
+        
+          Alert.alert('Foto salva com sucesso!');
+          setCapture(false)
+        }
+      } catch (error) {
+        console.log('Erro ao capturar foto:', error);
+      }
+    }
+  };
+ 
+  const uploadPhoto = async (photoUri) => {
+    const apiUrl = 'https://dev.yogha.com.br/api/mobile-operational/set-image'; // URL da API de upload
+  
+      try {
+        const formData = new FormData();
+        formData.append('id',String( route.params.CheckOutId)); // substitua pelo valor correto do ID
+        formData.append('file', {
+          uri:photoUri,
+          type: 'image/jpeg', // ajuste o tipo de acordo com o formato da imagem
+          name: 'photo.jpg', // ajuste o nome do arquivo conforme necessário
+        });
+      console.log(JSON.stringify(formData));
+
+  
+      const response = await api.post(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      console.log('Foto enviada com sucesso:', response.data);
+      addToText(response.data.link)
+      } catch (error) {
+        console.log(error)
+      }
+   
+  };
+
+  if(capture){
+    return(
+     <View style={styles.cameraContainer}>
+      <Camera style={styles.camera} type={Camera.Constants.Type.back} ref={ref => setCameraRef(ref)} />
+      <Cam onPress={handleCapturePhoto}>
+
+    <CamImage source={require("../../Assets/cam.png")}  />
+    </Cam>
+     </View>
+
+    )
+  }
   return (
+    
     <Container>
       <HeaderContainer>
         <ImageView>
@@ -292,12 +378,20 @@ const Others = ({route}) => {
           </AskView>
         )}
       </BodyContainer>
+      
       <FooterContainer>
           <Voltar onPress={() => navigation.goBack()}>Voltar</Voltar>
-          <Cam>
-            <CamImage source={require("../../Assets/cam.png")} />
-          </Cam>
-          <Voltar onPress={() => addAllObjects()}>Continuar</Voltar>
+            <Cam2 onPress={()=>{setCapture(true);setIncrement(increment+1)}}>
+
+              <CamImage source={require("../../Assets/cam.png")}  />
+            </Cam2>
+         
+          <View style={styles.cameraContainer}>
+        
+        </View>
+
+
+          <Voltar onPress={() => startCheckOut()}>Continuar</Voltar>
       </FooterContainer>
     </Container>
   );

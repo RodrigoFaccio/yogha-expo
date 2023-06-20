@@ -124,6 +124,7 @@ export const AddInsideView = styled.View`
   flex-direction: row;
   display: flex;
   justify-content: flex-start;
+  
 `;
 
 export const ImageArrow = styled.TouchableOpacity`
